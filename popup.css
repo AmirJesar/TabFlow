@@ -1,0 +1,454 @@
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    width: 380px;
+    min-height: 400px;
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    background: #f5f7fb;
+    color: #263238;
+}
+
+.container {
+    width: 100%;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    margin: 0;
+    color: #2878d0;
+    font-size: 25px;
+}
+
+header p {
+    margin: 5px 0;
+    color: #718096;
+    font-size: 12px;
+}
+
+section {
+    margin-bottom: 18px;
+}
+
+h2 {
+    font-size: 15px;
+    margin-bottom: 10px;
+    color: #34495e;
+}
+
+input,
+select {
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid #d5dce5;
+    border-radius: 6px;
+    font-size: 12px;
+    background: white;
+    color: #263238;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #2878d0;
+}
+
+button {
+    padding: 8px 11px;
+    border: none;
+    border-radius: 6px;
+    background: #2878d0;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+button:hover {
+    background: #1764b1;
+}
+
+.create-group-section {
+    padding: 12px;
+    background: white;
+    border: 1px solid #e1e7ef;
+    border-radius: 9px;
+}
+
+.create-group-section .group-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.create-group-section input,
+.create-group-section select {
+    width: 100%;
+}
+
+#createGroupButton {
+    width: 100%;
+    font-weight: bold;
+}
+
+#groupStatus {
+    margin-bottom: 0;
+    font-size: 11px;
+    color: #2878d0;
+}
+
+.groups-section,
+.tabs-section,
+.saved-groups-section,
+.suggestions-section,
+.duplicate-section {
+    padding: 12px;
+    background: white;
+    border: 1px solid #e1e7ef;
+    border-radius: 9px;
+}
+
+#searchInput {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+#groupsList,
+#tabsList,
+#savedGroupsList,
+#suggestionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 12px;
+}
+
+/* Existing Groups */
+
+.group-container {
+    padding: 10px;
+    border: 1px solid #e0e6ed;
+    border-radius: 8px;
+    background: #fafbfd;
+}
+
+.group-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 10px;
+}
+
+.group-header strong {
+    flex: 1;
+    overflow-wrap: anywhere;
+}
+
+.group-color-dot {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+.group-controls,
+.group-color-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.group-controls input {
+    flex: 1;
+    width: 50%;
+}
+
+.group-color-controls label {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.group-color-controls select {
+    flex: 1;
+}
+
+.group-tab-row,
+.tab-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 5px;
+    background: white;
+    border: 1px solid #edf0f4;
+}
+
+.tab-item input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.tab-title,
+.group-tab-row span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.close-tab-button {
+    padding: 4px 8px;
+    background: #e74c3c;
+    font-size: 14px;
+}
+
+.close-tab-button:hover {
+    background: #c0392b;
+}
+
+.group-tab-row button {
+    padding: 5px 8px;
+    background: #e67e22;
+    font-size: 10px;
+}
+
+.group-tab-row button:hover {
+    background: #ca6b13;
+}
+
+/* Saved Groups */
+
+.saved-group-item {
+    padding: 10px;
+    border: 1px solid #e0e6ed;
+    border-radius: 8px;
+    background: #fafbfd;
+}
+
+.saved-group-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 10px;
+}
+
+.saved-group-header strong {
+    flex: 1;
+    overflow-wrap: anywhere;
+}
+
+.saved-group-header span:last-child {
+    color: #718096;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.saved-group-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.saved-group-actions button {
+    flex: 1;
+    font-weight: bold;
+}
+
+.saved-group-actions .delete-saved-button {
+    background: #e74c3c;
+}
+
+.saved-group-actions .delete-saved-button:hover {
+    background: #c0392b;
+}
+
+.empty-message {
+    color: #8995a3;
+    font-size: 12px;
+    text-align: center;
+    padding: 8px;
+    margin: 0;
+}
+
+/* Automatic Suggestions */
+
+.section-description {
+    color: #718096;
+    font-size: 11px;
+    line-height: 1.5;
+    margin: 0 0 10px;
+}
+
+#findSuggestionsButton {
+    width: 100%;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.suggestion-card {
+    padding: 10px;
+    border: 1px solid #dce5ef;
+    border-radius: 8px;
+    background: #fafbfd;
+}
+
+.suggestion-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.suggestion-heading strong {
+    color: #2878d0;
+    overflow-wrap: anywhere;
+}
+
+.suggestion-heading span {
+    color: #718096;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.suggestion-tabs {
+    margin-bottom: 10px;
+    padding: 5px 8px;
+    background: white;
+    border-radius: 5px;
+}
+
+.suggestion-tabs p {
+    margin: 5px 0;
+    color: #526273;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.suggestion-card button {
+    width: 100%;
+    font-weight: bold;
+    background: #27ae60;
+}
+
+.suggestion-card button:hover {
+    background: #219150;
+}
+
+/* Duplicate Tab Detector */
+
+#scanDuplicatesButton {
+    width: 100%;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+#duplicateStatus {
+    margin: 0 0 10px;
+    color: #718096;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+#duplicatesList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.duplicate-card {
+    padding: 10px;
+    border: 1px solid #dce5ef;
+    border-radius: 8px;
+    background: #fafbfd;
+}
+
+.duplicate-url {
+    margin-bottom: 10px;
+    color: #34495e;
+    font-size: 11px;
+    font-weight: bold;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+}
+
+.duplicate-tab-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #edf0f4;
+    border-radius: 6px;
+    background: white;
+}
+
+.duplicate-tab-row span {
+    flex: 1;
+    min-width: 0;
+    color: #526273;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.duplicate-tab-row button {
+    flex-shrink: 0;
+    padding: 5px 8px;
+    font-size: 10px;
+}
+
+.duplicate-tab-row .keep-label {
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: #e5f7ec;
+    color: #218c4e;
+    font-size: 10px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.duplicate-tab-row .duplicate-label {
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: #fdebea;
+    color: #c0392b;
+    font-size: 10px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.duplicate-tab-row .close-tab-button {
+    background: #e74c3c;
+}
+
+.duplicate-tab-row .close-tab-button:hover {
+    background: #c0392b;
+}
+
+.duplicate-tab-row button:not(.close-tab-button) {
+    background: #2878d0;
+}
+
+.duplicate-tab-row button:not(.close-tab-button):hover {
+    background: #1764b1;
+}
+
+/* Empty states */
+
+#groupsList:empty,
+#tabsList:empty {
+    display: none;
+}

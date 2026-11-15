@@ -1,0 +1,11 @@
+# Linux temporary files
+*~
+.DS_Store
+
+# Editor settings
+.vscode/
+.idea/
+
+# Temporary files
+*.log
+*.tmp

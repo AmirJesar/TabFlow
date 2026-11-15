@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TabFlow</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+
+        <header>
+            <h1>TabFlow</h1>
+            <p>Manage your browser tabs</p>
+        </header>
+
+        <!-- Create Group -->
+        <section class="create-group-section">
+            <h2>Create Tab Group</h2>
+
+            <div class="group-controls">
+                <input
+                    type="text"
+                    id="groupNameInput"
+                    placeholder="Enter group name"
+                >
+
+                <select id="groupColorInput">
+                    <option value="blue">Blue</option>
+                    <option value="red">Red</option>
+                    <option value="green">Green</option>
+                    <option value="yellow">Yellow</option>
+                    <option value="purple">Purple</option>
+                    <option value="pink">Pink</option>
+                    <option value="cyan">Cyan</option>
+                    <option value="orange">Orange</option>
+                    <option value="grey">Grey</option>
+                </select>
+
+                <button id="createGroupButton">Create Group</button>
+            </div>
+
+            <p id="groupStatus"></p>
+        </section>
+
+        <!-- Automatic Suggestions -->
+        <section class="suggestions-section">
+            <h2>Automatic Suggestions</h2>
+
+            <p class="section-description">
+                Find tabs from the same website and group them together.
+            </p>
+
+            <button id="findSuggestionsButton">
+                Find Suggestions
+            </button>
+
+            <div id="suggestionsList">
+                <p class="empty-message">
+                    Click Find Suggestions to organize your tabs.
+                </p>
+            </div>
+        </section>
+
+        <!-- Duplicate Tab Detector -->
+        <section class="duplicate-section">
+            <h2>Duplicate Tab Detector</h2>
+
+            <p class="section-description">
+                Find repeated webpages among your open tabs.
+            </p>
+
+            <button id="scanDuplicatesButton">
+                Scan for Duplicates
+            </button>
+
+            <div id="duplicateStatus"></div>
+
+            <div id="duplicatesList">
+                <p class="empty-message">
+                    Click Scan for Duplicates to check your tabs.
+                </p>
+            </div>
+        </section>
+
+        <!-- Existing Groups -->
+        <section class="groups-section">
+            <h2>Existing Groups (<span id="groupCount">0</span>)</h2>
+            <div id="groupsList"></div>
+        </section>
+
+        <!-- Saved Groups -->
+        <section class="saved-groups-section">
+            <h2>Saved Groups (<span id="savedGroupCount">0</span>)</h2>
+
+            <div id="savedGroupsList">
+                <p class="empty-message">No saved groups yet.</p>
+            </div>
+        </section>
+
+        <!-- Open Tabs -->
+        <section class="tabs-section">
+            <h2>Open Tabs (<span id="tabCount">0</span>)</h2>
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search tabs..."
+            >
+
+            <div id="tabsList"></div>
+        </section>
+
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
