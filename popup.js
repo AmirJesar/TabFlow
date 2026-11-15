@@ -32,6 +32,9 @@ let selectedTabIds = new Set();
 
 let dismissedDomains = new Set();
 
+// IDs of extra duplicate tabs selected for bulk closing
+let selectedDuplicateTabIds = new Set();
+
 const groupColors = {
     blue: "#4a90e2",
     red: "#e74c3c",
@@ -353,13 +356,122 @@ function findDuplicateTabs() {
         }));
 }
 
+// Update the bulk close button and selected count
+function updateBulkCloseButton(button, countText) {
+    const selectedCount = selectedDuplicateTabIds.size;
+
+    countText.textContent =
+        `${selectedCount} duplicate${selectedCount === 1 ? "" : "s"} selected`;
+
+    button.textContent =
+        `Close ${selectedCount} Selected Duplicates`;
+
+    button.disabled = selectedCount === 0;
+
+    button.style.opacity = selectedCount === 0 ? "0.5" : "1";
+    button.style.cursor = selectedCount === 0 ? "not-allowed" : "pointer";
+}
+
+// Close selected duplicate tabs safely
+async function closeSelectedDuplicates() {
+    if (selectedDuplicateTabIds.size === 0) {
+        return;
+    }
+
+    const confirmed = window.confirm(
+        `Are you sure you want to close ${selectedDuplicateTabIds.size} selected duplicate tab(s)?`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        duplicateStatus.textContent =
+            "Checking selected tabs...";
+
+        // Fetch the latest Firefox tabs
+        const currentTabs = await browser.tabs.query({});
+
+        const currentTabMap = new Map(
+            currentTabs.map((tab) => [tab.id, tab])
+        );
+
+        // Recalculate duplicate groups using the latest tab information
+        const latestDuplicates = new Map();
+
+        currentTabs.forEach((tab) => {
+            if (!tab.url) {
+                return;
+            }
+
+            if (!latestDuplicates.has(tab.url)) {
+                latestDuplicates.set(tab.url, []);
+            }
+
+            latestDuplicates.get(tab.url).push(tab);
+        });
+
+        // Only allow closing tabs that are still extra copies.
+        // The first tab in each duplicate group remains protected.
+        const eligibleDuplicateIds = new Set();
+
+        latestDuplicates.forEach((tabs) => {
+            if (tabs.length > 1) {
+                tabs.slice(1).forEach((tab) => {
+                    eligibleDuplicateIds.add(tab.id);
+                });
+            }
+        });
+
+        const tabsToClose = Array.from(selectedDuplicateTabIds)
+            .filter((id) =>
+                currentTabMap.has(id) &&
+                eligibleDuplicateIds.has(id)
+            );
+
+        if (tabsToClose.length === 0) {
+            selectedDuplicateTabIds.clear();
+
+            duplicateStatus.textContent =
+                "The selected tabs are no longer duplicates.";
+
+            await loadTabs();
+            await scanDuplicates();
+            return;
+        }
+
+        // Close only the selected, verified duplicate tabs
+        await browser.tabs.remove(tabsToClose);
+
+        selectedDuplicateTabIds.clear();
+
+        duplicateStatus.textContent =
+            `Successfully closed ${tabsToClose.length} duplicate tab(s).`;
+
+        await loadTabs();
+        await scanDuplicates();
+
+    } catch (error) {
+        console.error("Bulk duplicate closing error:", error);
+
+        duplicateStatus.textContent =
+            "Could not close selected duplicates: " + error.message;
+    }
+}
+
 // Display duplicate tabs
 function displayDuplicates(duplicateGroups) {
     duplicatesList.innerHTML = "";
 
     if (duplicateGroups.length === 0) {
-        duplicatesList.innerHTML =
-            '<p class="empty-message">No duplicate tabs found!</p>';
+        selectedDuplicateTabIds.clear();
+
+        const message = document.createElement("p");
+        message.className = "empty-message";
+        message.textContent = "No duplicate tabs found!";
+
+        duplicatesList.appendChild(message);
 
         duplicateStatus.textContent =
             "Your open tabs look good.";
@@ -374,6 +486,50 @@ function displayDuplicates(duplicateGroups) {
 
     duplicateStatus.textContent =
         `Found ${duplicateGroups.length} duplicate URL groups and ${totalDuplicates} extra tabs.`;
+
+    // Collect all currently eligible extra duplicate IDs
+    const eligibleIds = new Set();
+
+    duplicateGroups.forEach((group) => {
+        group.tabs.slice(1).forEach((tab) => {
+            eligibleIds.add(tab.id);
+        });
+    });
+
+    // Remove selections that are no longer eligible
+    selectedDuplicateTabIds.forEach((id) => {
+        if (!eligibleIds.has(id)) {
+            selectedDuplicateTabIds.delete(id);
+        }
+    });
+
+    // Bulk selection toolbar
+    const toolbar = document.createElement("div");
+    toolbar.className = "duplicate-bulk-toolbar";
+
+    const selectedCount = document.createElement("span");
+    selectedCount.className = "duplicate-selected-count";
+
+    const bulkCloseButton = document.createElement("button");
+    bulkCloseButton.className = "bulk-close-duplicates-button";
+    bulkCloseButton.style.backgroundColor = "#e74c3c";
+
+    bulkCloseButton.addEventListener("mouseenter", () => {
+        if (!bulkCloseButton.disabled) {
+            bulkCloseButton.style.backgroundColor = "#c0392b";
+        }
+    });
+
+    bulkCloseButton.addEventListener("mouseleave", () => {
+        bulkCloseButton.style.backgroundColor = "#e74c3c";
+    });
+
+    bulkCloseButton.addEventListener("click", closeSelectedDuplicates);
+
+    toolbar.append(selectedCount, bulkCloseButton);
+    duplicatesList.appendChild(toolbar);
+
+    updateBulkCloseButton(bulkCloseButton, selectedCount);
 
     duplicateGroups.forEach((duplicateGroup) => {
         const card = document.createElement("div");
@@ -393,10 +549,46 @@ function displayDuplicates(duplicateGroups) {
             const tabRow = document.createElement("div");
             tabRow.className = "duplicate-tab-row";
 
-            const tabInfo = document.createElement("span");
-            tabInfo.textContent =
-                `${index === 0 ? "Keep" : "Duplicate"}: ${tab.title || "Untitled Tab"}`;
+            // First tab is protected
+            if (index === 0) {
+                const keepLabel = document.createElement("span");
+                keepLabel.className = "keep-label";
+                keepLabel.textContent = "Keep";
 
+                tabRow.appendChild(keepLabel);
+
+            } else {
+                // Only extra copies receive a selectable checkbox
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.className = "duplicate-select-checkbox";
+                checkbox.checked =
+                    selectedDuplicateTabIds.has(tab.id);
+
+                checkbox.title = "Select this duplicate tab";
+
+                checkbox.addEventListener("change", () => {
+                    if (checkbox.checked) {
+                        selectedDuplicateTabIds.add(tab.id);
+                    } else {
+                        selectedDuplicateTabIds.delete(tab.id);
+                    }
+
+                    updateBulkCloseButton(
+                        bulkCloseButton,
+                        selectedCount
+                    );
+                });
+
+                const duplicateLabel = document.createElement("span");
+                duplicateLabel.className = "duplicate-label";
+                duplicateLabel.textContent = "Duplicate";
+
+                tabRow.append(checkbox, duplicateLabel);
+            }
+
+            const tabInfo = document.createElement("span");
+            tabInfo.textContent = tab.title || "Untitled Tab";
             tabInfo.title = tab.url;
 
             const actions = document.createElement("div");
@@ -413,25 +605,27 @@ function displayDuplicates(duplicateGroups) {
 
             actions.appendChild(switchButton);
 
+            // Individual closing remains available for extra copies
             if (index > 0) {
                 const closeButton = document.createElement("button");
                 closeButton.textContent = "Close";
-                closeButton.className = "delete-saved-button";
+                closeButton.className = "close-tab-button";
 
                 closeButton.addEventListener("click", async () => {
                     try {
                         await browser.tabs.remove(tab.id);
 
+                        selectedDuplicateTabIds.delete(tab.id);
+
                         duplicateStatus.textContent =
                             "Duplicate tab closed.";
 
                         await loadTabs();
-
-                        const updatedDuplicates = findDuplicateTabs();
-                        displayDuplicates(updatedDuplicates);
+                        await scanDuplicates();
 
                     } catch (error) {
                         console.error("Closing duplicate error:", error);
+
                         duplicateStatus.textContent =
                             "Could not close tab: " + error.message;
                     }
