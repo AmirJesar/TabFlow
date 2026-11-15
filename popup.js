@@ -26,6 +26,18 @@ const duplicatesList =
 const duplicateStatus =
     document.getElementById("duplicateStatus");
 
+// Tab Snooze elements
+const snoozeSelectionList =
+    document.getElementById("snoozeSelectionList");
+const snoozeSelectedButton =
+    document.getElementById("snoozeSelectedButton");
+const snoozeStatus =
+    document.getElementById("snoozeStatus");
+const snoozedTabsList =
+    document.getElementById("snoozedTabsList");
+const snoozedTabCount =
+    document.getElementById("snoozedTabCount");
+
 let allTabs = [];
 let allGroups = [];
 let selectedTabIds = new Set();
@@ -34,6 +46,9 @@ let dismissedDomains = new Set();
 
 // IDs of extra duplicate tabs selected for bulk closing
 let selectedDuplicateTabIds = new Set();
+
+// IDs of tabs selected for snoozing
+let selectedSnoozeTabIds = new Set();
 
 const groupColors = {
     blue: "#4a90e2",
@@ -390,14 +405,12 @@ async function closeSelectedDuplicates() {
         duplicateStatus.textContent =
             "Checking selected tabs...";
 
-        // Fetch the latest Firefox tabs
         const currentTabs = await browser.tabs.query({});
 
         const currentTabMap = new Map(
             currentTabs.map((tab) => [tab.id, tab])
         );
 
-        // Recalculate duplicate groups using the latest tab information
         const latestDuplicates = new Map();
 
         currentTabs.forEach((tab) => {
@@ -412,8 +425,6 @@ async function closeSelectedDuplicates() {
             latestDuplicates.get(tab.url).push(tab);
         });
 
-        // Only allow closing tabs that are still extra copies.
-        // The first tab in each duplicate group remains protected.
         const eligibleDuplicateIds = new Set();
 
         latestDuplicates.forEach((tabs) => {
@@ -441,7 +452,6 @@ async function closeSelectedDuplicates() {
             return;
         }
 
-        // Close only the selected, verified duplicate tabs
         await browser.tabs.remove(tabsToClose);
 
         selectedDuplicateTabIds.clear();
@@ -487,7 +497,6 @@ function displayDuplicates(duplicateGroups) {
     duplicateStatus.textContent =
         `Found ${duplicateGroups.length} duplicate URL groups and ${totalDuplicates} extra tabs.`;
 
-    // Collect all currently eligible extra duplicate IDs
     const eligibleIds = new Set();
 
     duplicateGroups.forEach((group) => {
@@ -496,14 +505,12 @@ function displayDuplicates(duplicateGroups) {
         });
     });
 
-    // Remove selections that are no longer eligible
     selectedDuplicateTabIds.forEach((id) => {
         if (!eligibleIds.has(id)) {
             selectedDuplicateTabIds.delete(id);
         }
     });
 
-    // Bulk selection toolbar
     const toolbar = document.createElement("div");
     toolbar.className = "duplicate-bulk-toolbar";
 
@@ -549,7 +556,6 @@ function displayDuplicates(duplicateGroups) {
             const tabRow = document.createElement("div");
             tabRow.className = "duplicate-tab-row";
 
-            // First tab is protected
             if (index === 0) {
                 const keepLabel = document.createElement("span");
                 keepLabel.className = "keep-label";
@@ -558,7 +564,6 @@ function displayDuplicates(duplicateGroups) {
                 tabRow.appendChild(keepLabel);
 
             } else {
-                // Only extra copies receive a selectable checkbox
                 const checkbox = document.createElement("input");
                 checkbox.type = "checkbox";
                 checkbox.className = "duplicate-select-checkbox";
@@ -605,7 +610,6 @@ function displayDuplicates(duplicateGroups) {
 
             actions.appendChild(switchButton);
 
-            // Individual closing remains available for extra copies
             if (index > 0) {
                 const closeButton = document.createElement("button");
                 closeButton.textContent = "Close";
@@ -658,6 +662,353 @@ async function scanDuplicates() {
 
         duplicateStatus.textContent =
             "Could not scan tabs: " + error.message;
+    }
+}
+
+// Check whether a tab is safe to snooze
+function isSnoozableTab(tab) {
+    if (!tab.url || !tab.id || tab.active) {
+        return false;
+    }
+
+    try {
+        const url = new URL(tab.url);
+
+        // Only ordinary web pages are eligible
+        return (
+            url.protocol === "http:" ||
+            url.protocol === "https:"
+        );
+
+    } catch (error) {
+        return false;
+    }
+}
+
+// Display open tabs that can be snoozed
+function displaySnoozeSelection(tabs) {
+    snoozeSelectionList.innerHTML = "";
+
+    const eligibleTabs = tabs.filter(isSnoozableTab);
+
+    // Remove selections for tabs that are no longer eligible
+    const eligibleIds = new Set(
+        eligibleTabs.map((tab) => tab.id)
+    );
+
+    selectedSnoozeTabIds.forEach((id) => {
+        if (!eligibleIds.has(id)) {
+            selectedSnoozeTabIds.delete(id);
+        }
+    });
+
+    if (eligibleTabs.length === 0) {
+        const message = document.createElement("p");
+        message.className = "empty-message";
+        message.textContent =
+            "No eligible tabs to snooze. Keep at least one other webpage open.";
+
+        snoozeSelectionList.appendChild(message);
+        updateSnoozeButton();
+        return;
+    }
+
+    eligibleTabs.forEach((tab) => {
+        const row = document.createElement("div");
+        row.className = "snooze-tab-item";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = selectedSnoozeTabIds.has(tab.id);
+
+        checkbox.addEventListener("change", () => {
+            if (checkbox.checked) {
+                selectedSnoozeTabIds.add(tab.id);
+            } else {
+                selectedSnoozeTabIds.delete(tab.id);
+            }
+
+            updateSnoozeButton();
+        });
+
+        const title = document.createElement("span");
+        title.className = "snooze-tab-title";
+        title.textContent = tab.title || "Untitled Tab";
+        title.title = tab.url;
+
+        row.append(checkbox, title);
+        snoozeSelectionList.appendChild(row);
+    });
+
+    updateSnoozeButton();
+}
+
+// Update snooze button count
+function updateSnoozeButton() {
+    const count = selectedSnoozeTabIds.size;
+
+    snoozeSelectedButton.textContent =
+        `Snooze Selected Tabs (${count})`;
+
+    snoozeSelectedButton.disabled = count === 0;
+}
+
+// Load tabs available for snoozing
+async function loadSnoozeSelection() {
+    try {
+        const tabs = await browser.tabs.query({});
+        displaySnoozeSelection(tabs);
+    } catch (error) {
+        console.error("Snooze selection error:", error);
+        snoozeStatus.textContent =
+            "Could not load tabs: " + error.message;
+    }
+}
+
+// Snooze selected tabs
+async function snoozeSelectedTabs() {
+    if (selectedSnoozeTabIds.size === 0) {
+        snoozeStatus.textContent =
+            "Please select at least one tab.";
+        return;
+    }
+
+    const selectedCount = selectedSnoozeTabIds.size;
+
+    const confirmed = window.confirm(
+        `Save and close ${selectedCount} selected tab(s)? Your currently active tab will remain open.`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        snoozeSelectedButton.disabled = true;
+        snoozeStatus.textContent = "Checking selected tabs...";
+
+        // Fetch the latest state from Firefox
+        const currentTabs = await browser.tabs.query({});
+        const currentTabMap = new Map(
+            currentTabs.map((tab) => [tab.id, tab])
+        );
+
+        // Recheck eligibility to prevent closing the active tab
+        const tabsToSnooze = Array.from(selectedSnoozeTabIds)
+            .map((id) => currentTabMap.get(id))
+            .filter((tab) => tab && isSnoozableTab(tab));
+
+        if (tabsToSnooze.length === 0) {
+            selectedSnoozeTabIds.clear();
+
+            snoozeStatus.textContent =
+                "No selected tabs are eligible anymore.";
+
+            await loadSnoozeSelection();
+            return;
+        }
+
+        // Make sure the current active tab remains open
+        const activeTabs = currentTabs.filter(
+            (tab) => tab.active
+        );
+
+        if (activeTabs.length === 0) {
+            snoozeStatus.textContent =
+                "Could not identify the active tab. Nothing was closed.";
+            return;
+        }
+
+        // Prepare saved tab information
+        const newSnoozedTabs = tabsToSnooze.map((tab, index) => ({
+            id: `${Date.now()}-${tab.id}-${index}`,
+            title: tab.title || "Untitled Tab",
+            url: tab.url,
+            savedAt: new Date().toISOString()
+        }));
+
+        // Read existing saved tabs
+        const result = await browser.storage.local.get("snoozedTabs");
+        const existingSnoozedTabs = result.snoozedTabs || [];
+
+        // Save tabs before closing them
+        await browser.storage.local.set({
+            snoozedTabs: [
+                ...existingSnoozedTabs,
+                ...newSnoozedTabs
+            ]
+        });
+
+        // Close only the verified selected tabs
+        const idsToClose = tabsToSnooze.map(
+            (tab) => tab.id
+        );
+
+        await browser.tabs.remove(idsToClose);
+
+        selectedSnoozeTabIds.clear();
+
+        snoozeStatus.textContent =
+            `Successfully saved and closed ${tabsToSnooze.length} tab(s).`;
+
+        await loadSnoozedTabs();
+        await loadTabs();
+        await loadSnoozeSelection();
+
+    } catch (error) {
+        console.error("Snooze error:", error);
+
+        snoozeStatus.textContent =
+            "Snooze operation failed: " + error.message;
+
+        await loadSnoozedTabs();
+        await loadSnoozeSelection();
+
+    } finally {
+        updateSnoozeButton();
+    }
+}
+
+// Load saved snoozed tabs
+async function loadSnoozedTabs() {
+    try {
+        const result = await browser.storage.local.get("snoozedTabs");
+        const snoozedTabs = result.snoozedTabs || [];
+
+        displaySnoozedTabs(snoozedTabs);
+
+    } catch (error) {
+        console.error("Loading snoozed tabs error:", error);
+
+        snoozeStatus.textContent =
+            "Could not load saved tabs: " + error.message;
+    }
+}
+
+// Display saved snoozed tabs
+function displaySnoozedTabs(snoozedTabs) {
+    snoozedTabsList.innerHTML = "";
+
+    snoozedTabCount.textContent = snoozedTabs.length;
+
+    if (snoozedTabs.length === 0) {
+        const message = document.createElement("p");
+        message.className = "empty-message";
+        message.textContent = "No snoozed tabs yet.";
+
+        snoozedTabsList.appendChild(message);
+        return;
+    }
+
+    snoozedTabs.forEach((savedTab) => {
+        const row = document.createElement("div");
+        row.className = "snoozed-tab-item";
+
+        const title = document.createElement("span");
+        title.className = "snoozed-tab-title";
+        title.textContent = savedTab.title || "Untitled Tab";
+        title.title = savedTab.url;
+
+        const restoreButton = document.createElement("button");
+        restoreButton.className = "restore-snoozed-button";
+        restoreButton.textContent = "Restore";
+
+        restoreButton.addEventListener("click", async () => {
+            await restoreSnoozedTab(savedTab);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete-snoozed-button";
+        deleteButton.textContent = "Delete";
+
+        deleteButton.addEventListener("click", async () => {
+            await deleteSnoozedTab(savedTab.id);
+        });
+
+        row.append(title, restoreButton, deleteButton);
+        snoozedTabsList.appendChild(row);
+    });
+}
+
+// Restore one snoozed tab
+async function restoreSnoozedTab(savedTab) {
+    try {
+        // Validate saved URL before opening it
+        const url = new URL(savedTab.url);
+
+        if (
+            url.protocol !== "http:" &&
+            url.protocol !== "https:"
+        ) {
+            snoozeStatus.textContent =
+                "This saved address cannot be restored.";
+            return;
+        }
+
+        await browser.tabs.create({
+            url: savedTab.url,
+            active: true
+        });
+
+        // Remove from saved list only after successful creation
+        const result = await browser.storage.local.get("snoozedTabs");
+        const snoozedTabs = result.snoozedTabs || [];
+
+        const updatedTabs = snoozedTabs.filter(
+            (tab) => tab.id !== savedTab.id
+        );
+
+        await browser.storage.local.set({
+            snoozedTabs: updatedTabs
+        });
+
+        snoozeStatus.textContent =
+            "Tab restored successfully!";
+
+        await loadSnoozedTabs();
+        await loadTabs();
+        await loadSnoozeSelection();
+
+    } catch (error) {
+        console.error("Restore snoozed tab error:", error);
+
+        snoozeStatus.textContent =
+            "Could not restore tab: " + error.message;
+    }
+}
+
+// Delete a saved snoozed tab
+async function deleteSnoozedTab(tabId) {
+    try {
+        const confirmed = window.confirm(
+            "Delete this saved tab? It will not be restored."
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        const result = await browser.storage.local.get("snoozedTabs");
+        const snoozedTabs = result.snoozedTabs || [];
+
+        const updatedTabs = snoozedTabs.filter(
+            (tab) => tab.id !== tabId
+        );
+
+        await browser.storage.local.set({
+            snoozedTabs: updatedTabs
+        });
+
+        snoozeStatus.textContent =
+            "Saved tab deleted.";
+
+        await loadSnoozedTabs();
+
+    } catch (error) {
+        console.error("Delete snoozed tab error:", error);
+
+        snoozeStatus.textContent =
+            "Could not delete saved tab: " + error.message;
     }
 }
 
@@ -1172,5 +1523,14 @@ findSuggestionsButton.addEventListener("click", () => {
 
 scanDuplicatesButton.addEventListener("click", scanDuplicates);
 
+// Tab Snooze event listeners
+snoozeSelectedButton.addEventListener(
+    "click",
+    snoozeSelectedTabs
+);
+
+// Initial loading
 loadTabs();
 loadSavedGroups();
+loadSnoozeSelection();
+loadSnoozedTabs();

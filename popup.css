@@ -108,7 +108,8 @@ button:hover {
 .tabs-section,
 .saved-groups-section,
 .suggestions-section,
-.duplicate-section {
+.duplicate-section,
+.snooze-section {
     padding: 12px;
     background: white;
     border: 1px solid #e1e7ef;
@@ -444,6 +445,93 @@ button:hover {
 
 .duplicate-tab-row button:not(.close-tab-button):hover {
     background: #1764b1;
+}
+
+/* Tab Snooze */
+
+.snooze-section h3 {
+    margin: 16px 0 10px;
+    font-size: 13px;
+    color: #34495e;
+}
+
+#snoozeSelectionList,
+#snoozedTabsList {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.snooze-tab-item,
+.snoozed-tab-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px;
+    border: 1px solid #e0e6ed;
+    border-radius: 7px;
+    background: #fafbfd;
+}
+
+.snooze-tab-item input[type="checkbox"] {
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.snooze-tab-title,
+.snoozed-tab-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    color: #34495e;
+}
+
+.snoozed-tab-item button {
+    flex-shrink: 0;
+    padding: 5px 8px;
+    font-size: 10px;
+}
+
+#snoozeSelectedButton {
+    width: 100%;
+    margin-top: 10px;
+    background: #e67e22;
+    font-weight: bold;
+}
+
+#snoozeSelectedButton:hover {
+    background: #ca6b13;
+}
+
+#snoozeSelectedButton:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.snoozed-tab-item .restore-snoozed-button {
+    background: #27ae60;
+}
+
+.snoozed-tab-item .restore-snoozed-button:hover {
+    background: #219150;
+}
+
+.snoozed-tab-item .delete-snoozed-button {
+    background: #e74c3c;
+}
+
+.snoozed-tab-item .delete-snoozed-button:hover {
+    background: #c0392b;
+}
+
+#snoozeStatus {
+    margin: 8px 0 0;
+    color: #2878d0;
+    font-size: 11px;
+    line-height: 1.5;
 }
 
 /* Empty states */
